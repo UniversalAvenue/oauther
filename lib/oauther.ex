@@ -22,12 +22,14 @@ defmodule OAuther do
     {%{"Authorization" => "OAuth " <> compose_header(oauth_params)}, req_params}
   end
 
-  def protocol_params(_params, %Credentials{} = creds) do
+  def protocol_params(params, %Credentials{} = creds) when is_map(params),
+    do: protocol_params(Map.to_list(params), creds)
+  def protocol_params(params, %Credentials{} = creds) do
     [{"oauth_consumer_key",     creds.consumer_key},
      {"oauth_nonce",            nonce},
      {"oauth_signature_method", sign_method(creds.method)},
      {"oauth_timestamp",        timestamp},
-     {"oauth_version",          "1.0"}]
+     {"oauth_version",          "1.0"} | params]
   end
 
   def signature(_, _, _, %{method: :plaintext} = creds) do
