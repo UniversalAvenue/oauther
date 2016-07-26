@@ -1,7 +1,6 @@
 defmodule OAuther do
   defmodule Credentials do
-    defstruct [:consumer_key, :consumer_secret,
-               :token, :token_secret, method: :hmac_sha1]
+    defstruct [:consumer_key, :consumer_secret, method: :hmac_sha1]
   end
 
   def credentials(args) do
@@ -20,16 +19,15 @@ defmodule OAuther do
   def header(params) do
     {oauth_params, req_params} = Enum.partition(params, &protocol_param?/1)
 
-    {{"Authorization", "OAuth " <> compose_header(oauth_params)}, req_params}
+    {%{"Authorization" => "OAuth " <> compose_header(oauth_params)}, req_params}
   end
 
-  def protocol_params(params, %Credentials{} = creds) do
+  def protocol_params(_params, %Credentials{} = creds) do
     [{"oauth_consumer_key",     creds.consumer_key},
      {"oauth_nonce",            nonce},
      {"oauth_signature_method", sign_method(creds.method)},
      {"oauth_timestamp",        timestamp},
-     {"oauth_version",          "1.0"}
-     | cons_token(params, creds.token)]
+     {"oauth_version",          "1.0"}]
   end
 
   def signature(_, _, _, %{method: :plaintext} = creds) do
@@ -61,7 +59,7 @@ defmodule OAuther do
   end
 
   defp compose_key(creds) do
-    [creds.consumer_secret, creds.token_secret]
+    [creds.consumer_secret, ""]
     |> Enum.map_join("&", &percent_encode/1)
   end
 
@@ -116,10 +114,6 @@ defmodule OAuther do
 
     mgsec * 1_000_000 + sec
   end
-
-  defp cons_token(params, nil), do: params
-  defp cons_token(params, value),
-    do: [{"oauth_token", value} | params]
 
   defp sign_method(:plaintext), do: "PLAINTEXT"
   defp sign_method(:hmac_sha1), do: "HMAC-SHA1"
